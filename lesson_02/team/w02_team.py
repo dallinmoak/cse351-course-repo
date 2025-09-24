@@ -1,5 +1,5 @@
 """
-Course: CSE 351 
+Course: CSE 351
 Lesson: L02 team activity
 File:   team.py
 Author: <Add name here>
@@ -23,7 +23,7 @@ TODO
   it retrieves data based on a URL.  The class should have a method
   called get_name() that returns the name of the character, planet, etc...
 - The threaded class should only retrieve one URL.
-  
+
 - Speed up this program as fast as you can by:
     - creating as many as you can
     - start them all
@@ -31,6 +31,7 @@ TODO
 
 """
 
+from asyncio import threads
 from datetime import datetime, timedelta
 import threading
 
@@ -42,35 +43,85 @@ from cse351 import *
 # global
 call_count = 0
 
-def get_urls(film6, kind):
-    global call_count
+# def get_urls(film6, kind):
+#     global call_count
 
-    urls = film6[kind]
-    print(kind)
-    for url in urls:
-        call_count += 1
-        item = get_data_from_server(url)
-        print(f'  - {item['name']}')
+#     urls = film6[kind]
+#     print(kind)
+#     for url in urls:
+#         call_count += 1
+#         item = get_data_from_server(url)
+#         print(f'  - {item['name']}')
+
+
+class FetcherThread(threading.Thread):
+    def __init__(self, url, call_count_lock):
+        threading.Thread.__init__(self)
+        self.url = url['url']
+        self.kind = url['kind']
+        self.call_count_lock = call_count_lock
+
+    def get_data(self):
+        full_data = self.data
+        full_data = dict(self.data)
+        full_data['kind'] = self.kind
+        return full_data
+
+    def run(self):
+        global call_count
+        with self.call_count_lock:
+            call_count += 1
+        self.data = get_data_from_server(self.url)
+        # print(f"  - {self.data['name']}")
+
 
 def main():
     global call_count
 
-    log = Log(show_terminal=True)
-    log.start_timer('Starting to retrieve data from the server')
+    global my_results
 
-    film6 = get_data_from_server(f'{TOP_API_URL}/films/6')
+    my_results = {}
+
+    call_count_lock: threading.Lock = threading.Lock()
+
+    log = Log(show_terminal=True)
+    log.start_timer("Starting to retrieve data from the server")
+
+    film6 = get_data_from_server(f"{TOP_API_URL}/films/6")
     call_count += 1
     print_dict(film6)
 
-    # Retrieve people
-    get_urls(film6, 'characters')
-    get_urls(film6, 'planets')
-    get_urls(film6, 'starships')
-    get_urls(film6, 'vehicles')
-    get_urls(film6, 'species')
+    data_type = ["characters", "planets", "starships", "vehicles", "species"]
 
-    log.stop_timer('Total Time To complete')
-    log.write(f'There were {call_count} calls to the server')
+    all_Urls = []
+    threads = []
+
+    for kind in data_type:
+        urls = film6[kind]
+        for url in urls:
+            all_Urls.append({'url': url, 'kind': kind})
+
+    for url in all_Urls:
+        thread = FetcherThread(url, call_count_lock)
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    for thread in threads:
+        item = thread.get_data()
+        kind = item['kind']
+        if kind not in my_results:
+            my_results[kind] = []
+        my_results[kind].append(item)
+
+    print_dict(my_results)
+
+
+    log.stop_timer("Total Time To complete")
+    log.write(f"There were {call_count} calls to the server")
+
 
 if __name__ == "__main__":
     main()

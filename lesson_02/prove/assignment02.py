@@ -23,13 +23,37 @@ def main():
     create_data_files_if_needed()
 
     # Load ATM data files
-    data_files = get_filenames('data_files')
+    data_files: list = get_filenames('data_files')
     # print(data_files)
     
-    log = Log(show_terminal=True)
+    log: Log = Log(show_terminal=True)
     log.start_timer()
 
-    bank = Bank()
+    bank: Bank = Bank()
+
+    test_data_files: list = [
+        'test_file_01.dat'
+    ]
+
+    atm_readers = [
+        # ATM_Reader(bank, target_file) for target_file in test_data_files
+        ATM_Reader(bank, target_file) for target_file in data_files
+    ]
+
+
+
+    for atm_reader in atm_readers:
+        atm_reader.start()
+
+    print('waiting for ATM readers to finish')
+
+    for atm_reader in atm_readers:
+        atm_reader.join()
+
+    print('all ATM readers have finished')
+    for account_id in range(1, 21):
+        balance: Money = bank.get_balance(account_id)
+        print(f'  - account {account_id} balance is {str(balance)}')
 
     # TODO - Add a ATM_Reader for each data file
 
@@ -38,22 +62,73 @@ def main():
     log.stop_timer('Total time')
 
 
-# ===========================================================================
-class ATM_Reader():
-    # TODO - implement this class here
-    ...
-
-
-# ===========================================================================
-class Account():
-    # TODO - implement this class here
-    ...
 
 
 # ===========================================================================
 class Bank():
     # TODO - implement this class here
-    ...
+    def __init__(self):
+        print('intializing bank')
+        self.accounts = {
+            i: Account() for i in range(1, 21)
+        }
+        # for account_id, account in self.accounts.items():
+        #     print(f'  - account {account_id} initialized with balance {account.get_balance()}')
+
+    def deposit(self, account_id: int, amount: Money):
+        self.accounts[account_id].deposit(amount)
+
+    def withdraw(self, account_id: int, amount: Money):
+        self.accounts[account_id].withdraw(amount)
+
+
+    def get_balance(self, account_id: int)-> Money:
+        account: Account = self.accounts[account_id]
+        balance: Money = account.get_balance()
+        return balance
+
+# ===========================================================================
+class ATM_Reader(threading.Thread):
+    def __init__(self, bank: Bank, target_file: str):
+        threading.Thread.__init__(self)
+        self.bank = bank
+        self.target_file = target_file
+        print(f'initializing ATM reader for {target_file}')
+
+    def run(self):
+        print(f'Running ATM reader for {self.target_file}')
+        with open(self.target_file, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                parts = line.split(',')
+                if len(parts) != 3:
+                    continue
+                account_number = int(parts[0])
+                type = parts[1].lower()
+                amount = Money(parts[2])
+                if type == 'd':
+                    self.bank.deposit(account_number, amount)
+                elif type == 'w':
+                    self.bank.withdraw(account_number, amount)
+
+
+# ===========================================================================
+class Account():
+    # TODO - implement this class here
+    def __init__(self):
+        print('intializing account')
+        self.balance: Money = Money('0.00')
+
+    def deposit(self, amount: Money):
+        self.balance.add(amount)
+
+    def withdraw(self, amount: Money):
+        self.balance.sub(amount)
+
+    def get_balance(self)-> Money:
+        return self.balance
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +176,7 @@ def create_data_files_if_needed():
     print()
 
 # ---------------------------------------------------------------------------
-def test_balances(bank):
+def test_balances(bank: Bank):
     """ Don't Change """
 
     # Verify balances for each account

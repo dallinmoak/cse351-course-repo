@@ -17,6 +17,7 @@ recno: record number starting from 0
 
 """
 
+from threading import Thread
 import time
 from common import *
 
@@ -35,6 +36,10 @@ def retrieve_weather_data():
 
 # ---------------------------------------------------------------------------
 # TODO - Create Worker threaded class
+class Worker(Thread.thread):
+    def __init__(self):
+        super().__init__()
+        ...
 
 
 # ---------------------------------------------------------------------------

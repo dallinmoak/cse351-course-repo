@@ -38,36 +38,90 @@ from common import *
 
 # Include cse 351 common Python files
 from cse351 import *
+import json
 
 # global
 call_count = 0
 
-def get_urls(film6, kind):
-    global call_count
+class FilmGetter(threading.Thread):
+    def __init__(self, film_no, call_count_lock):
+        threading.Thread.__init__(self)
+        self.url = f'{TOP_API_URL}/films/{film_no}'
+        self.film_data = None
+        self.call_count_lock = call_count_lock
 
-    urls = film6[kind]
-    print(kind)
-    for url in urls:
-        call_count += 1
-        item = get_data_from_server(url)
-        print(f'  - {item['name']}')
+    def run(self):
+        global call_count
+        self.film_data = get_data_from_server(self.url)
+        with self.call_count_lock:
+            call_count += 1
+
+    def get_film_data(self):
+        return self.film_data
+
+class ItemGetter(threading.Thread):
+    def __init__(self, item: tuple[str, str], url, call_count_lock):
+        threading.Thread.__init__(self)
+        # item is expected to be (kind, url)
+        self.url = url
+        self.kind = item[0]
+        self.film_no = item[1]
+        self.item_data = None
+        self.call_count_lock = call_count_lock
+
+    def run(self):
+        global call_count
+        self.item_data = get_data_from_server(self.url)
+        with self.call_count_lock:
+            call_count += 1
+
+    def get_item_data(self):
+        return {
+            'kind': self.kind,
+            'film_no': self.film_no,
+            'data': self.item_data
+        }
 
 def main():
     global call_count
 
+    call_count_lock = threading.Lock()
+
     log = Log(show_terminal=True)
     log.start_timer('Starting to retrieve data from the server')
 
-    film6 = get_data_from_server(f'{TOP_API_URL}/films/6')
-    call_count += 1
-    print_dict(film6)
+    film_getters = []
 
-    # Retrieve people
-    get_urls(film6, 'characters')
-    get_urls(film6, 'planets')
-    get_urls(film6, 'starships')
-    get_urls(film6, 'vehicles')
-    get_urls(film6, 'species')
+    for i in range(6):
+        filmNo = i + 1
+        film_getter = FilmGetter(filmNo, call_count_lock)
+        film_getters.append(film_getter)
+        film_getter.start()
+
+    film_data = {}
+
+    for getter in film_getters:
+        getter.join()
+        film_data[getter.get_film_data()['episode_id']] = getter.get_film_data()
+
+    item_types = ['characters', 'planets', 'starships', 'vehicles', 'species']
+
+    item_getters = []
+
+    for key in sorted(film_data.keys()):
+        for item_type in item_types:
+            urls = film_data[key][item_type]
+            for url in urls:
+                item_info = (item_type, key)
+                item_getter = ItemGetter(item_info, url, call_count_lock)
+                item_getters.append(item_getter)
+                item_getter.start()
+
+    for getter in item_getters:
+        getter.join()
+        item_data = getter.get_item_data()
+        print(f"{item_data['kind'].capitalize()} from Episode {item_data['film_no']}: {item_data['data']['name']}")
+        
 
     log.stop_timer('Total Time To complete')
     log.write(f'There were {call_count} calls to the server')

@@ -33,6 +33,7 @@ def is_prime(n):
     return True
 
 def main():
+    prime_count = 0
     log = Log(show_terminal=True)
     log.start_timer()
 

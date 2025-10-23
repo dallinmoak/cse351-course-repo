@@ -24,7 +24,7 @@ from queue import Queue
 
 from cse351 import *
 
-THREADS = 100  # TODO - set for your program
+THREADS = 400  # TODO - set for your program
 WORKERS = 10
 RECORDS_TO_RETRIEVE = 5000  # Don't change
 
@@ -35,9 +35,10 @@ def retrieve_weather_data(
     worker_queue: Queue[tuple[str, float, str]],
 ):
     while True:
-        name, recno = fetcher_queue.get()
-        if name is None:
+        item = fetcher_queue.get()
+        if item is None:
             break
+        name, recno = item
         print(f"retrieving record {recno} for {name}...")
         res = get_data_from_server(f"{TOP_API_URL}/record/{name}/{recno}")
         worker_queue.put((name, res["temp"], res["date"]))

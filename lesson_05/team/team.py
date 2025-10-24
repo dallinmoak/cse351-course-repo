@@ -14,7 +14,9 @@ Instructions:
 from datetime import datetime, timedelta
 import multiprocessing as mp
 import random
-from matplotlib.pylab import plt  # load plot library
+import matplotlib
+matplotlib.use('Qt5Agg')
+import matplotlib.pyplot as plt
 
 
 # Include cse 351 common Python files

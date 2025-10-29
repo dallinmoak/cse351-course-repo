@@ -386,3 +386,5 @@ MigrationBackup/
 .venv/
 
 requirements.txt
+
+lesson_06/prove/faces/*

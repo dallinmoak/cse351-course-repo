@@ -1,33 +1,47 @@
 import multiprocessing as mp
 
-def sender(conn, msg):
-    for m in msg:
-        conn.send(m)
-    conn.send(None)
-    conn.close()
+def expand_message(que, messages):
+    # the sender always calls queue.put()
+    for msg in messages:
+        msg = msg.replace('msg', 'message ')
+        que.put(msg)
+        print(f'expanded: {msg}')
 
-def receiver(conn):
+    que.put(None)  # Signal the end of messages
+
+def add_punctuation(inQue, outQue):
     while True:
-        m = conn.recv()
-        if m is None:
+        msg = inQue.get()
+        if msg is None:
+            outQue.put(None)  # Signal the end of messages
             break
-        print("Received:", m)
-    conn.close()
+        msg = msg + '!'
+        print(f'Punctuated: {msg}')
+        outQue.put(msg)
+
+def receiver(que):
+    while True:
+        msg = que.get()
+        if msg is None:
+            break
+        print(f'Received: {msg}')
 
 if __name__ == '__main__':
 
-    msgs = ['hi','hello','howdy','heyas']
+    messages = ['msg1', 'msg2', 'msg3', 'msg4']
 
-    myPipe = mp.Pipe()
+    queue = mp.Queue()
+    punctuation_queue = mp.Queue()
 
-    parent_conn, child_conn = myPipe
+    expander_process = mp.Process(target=expand_message, args=(queue, messages))
+    punctuation_process = mp.Process(target=add_punctuation, args=(queue, punctuation_queue))
+    receiving_process = mp.Process(target=receiver, args=tuple([punctuation_queue]))
 
-    parentProcess = mp.Process(target=sender, args=(parent_conn, msgs))
-    childProcess = mp.Process(target=receiver, args=(child_conn,))
+    expander_process.start()
+    punctuation_process.start()
+    receiving_process.start()
 
-    parentProcess.start()
-    childProcess.start()
-
-    parentProcess.join()
-    childProcess.join()
+    expander_process.join()
+    punctuation_process.join()
+    receiving_process.join()
 

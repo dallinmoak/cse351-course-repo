@@ -66,7 +66,30 @@ import threading
 PHILOSOPHERS = 5
 MAX_MEALS_EATEN = PHILOSOPHERS * 5 # NOTE: Total meals to be eaten, not per philosopher!
 
+
+class Philosopher():
+    def __init__(self,t1, t2):
+        self.meals_eaten = 0
+        # fork means holding the lock for the fork at an index 0-4
+        self.target_1 = t1
+        self.target_2 = t2
+
 def main():
+    
+    meals_eaten = 0
+    meals_eaten_lock = threading.Lock()
+
+    fork_locks = [threading.Lock() for _ in range(PHILOSOPHERS)]
+
+    plato = Philosopher(fork_locks[0], fork_locks[1])
+    confucius = Philosopher(fork_locks[1], fork_locks[2])
+    socrates = Philosopher(fork_locks[2], fork_locks[3])
+    voltaire = Philosopher(fork_locks[3], fork_locks[4])
+    descarts = Philosopher(fork_locks[4], fork_locks[0])
+
+
+    # fork_locks[0].acquire(blocki
+
     # TODO - Create the forks.
     # TODO - Create PHILOSOPHERS philosophers.
     # TODO - Start them eating and thinking.

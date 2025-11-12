@@ -1,5 +1,5 @@
 """
-Course: CSE 251 
+Course: CSE 251
 Assignment: 08 Prove Part 1
 File:   prove_part_1.py
 Author: <Add name here>
@@ -30,19 +30,41 @@ speed = SLOW_SPEED
 
 # TODO: Add any functions needed here.
 
-def solve_path(maze):
-    """ Solve the maze and return the path found between the start and end positions.  
-        The path is a list of positions, (x, y) """
+
+def solve_path(maze: Maze):
+    """Solve the maze and return the path found between the start and end positions.
+    The path is a list of positions, (x, y)"""
     path = []
     # TODO: Solve the maze recursively while tracking the correct path.
+    
+
+    def depth_first_search(pos):
+        if maze.at_end(pos[0], pos[1]):
+            path.append(pos)
+            return True
+
+        for dir in maze.get_possible_moves(pos[0], pos[1]):
+            if maze.can_move_here(dir[0], dir[1]):
+                maze.move(dir[0], dir[1], COLOR)
+                path.append(dir)
+
+                if depth_first_search(dir):
+                    return True
+                else:
+                    path.pop()
+                    maze.restore(dir[0], dir[1])
+
+        return False
 
     # Hint: You can create an inner function to do the recursion
+    maze.move(maze.get_start_pos()[0], maze.get_start_pos()[1], COLOR)
+    depth_first_search(maze.get_start_pos())
 
     return path
 
 
 def get_path(log, filename):
-    """ Do not change this function """
+    """Do not change this function"""
     # 'Maze: Press "q" to quit, "1" slow drawing, "2" faster drawing, "p" to play again'
     global speed
 
@@ -54,19 +76,19 @@ def get_path(log, filename):
 
     path = solve_path(maze)
 
-    log.write(f'Drawing commands to solve = {screen.get_command_count()}')
+    log.write(f"Drawing commands to solve = {screen.get_command_count()}")
 
     done = False
     while not done:
-        if screen.play_commands(speed): 
+        if screen.play_commands(speed):
             key = cv2.waitKey(0)
-            if key == ord('1'):
+            if key == ord("1"):
                 speed = SLOW_SPEED
-            elif key == ord('2'):
+            elif key == ord("2"):
                 speed = FAST_SPEED
-            elif key == ord('q'):
+            elif key == ord("q"):
                 exit()
-            elif key != ord('p'):
+            elif key != ord("p"):
                 done = True
         else:
             done = True
@@ -75,34 +97,34 @@ def get_path(log, filename):
 
 
 def find_paths(log):
-    """ Do not change this function """
+    """Do not change this function"""
 
     files = (
-        'very-small.bmp',
-        'very-small-loops.bmp',
-        'small.bmp',
-        'small-loops.bmp',
-        'small-odd.bmp',
-        'small-open.bmp',
-        'large.bmp',
-        'large-loops.bmp',
-        'large-squares.bmp',
-        'large-open.bmp'
+        "very-small.bmp",
+        "very-small-loops.bmp",
+        "small.bmp",
+        "small-loops.bmp",
+        "small-odd.bmp",
+        "small-open.bmp",
+        "large.bmp",
+        "large-loops.bmp",
+        "large-squares.bmp",
+        "large-open.bmp",
     )
 
-    log.write('*' * 40)
-    log.write('Part 1')
+    log.write("*" * 40)
+    log.write("Part 1")
     for filename in files:
-        filename = f'./mazes/{filename}'
+        filename = f"./mazes/{filename}"
         log.write()
-        log.write(f'File: {filename}')
+        log.write(f"File: {filename}")
         path = get_path(log, filename)
-        log.write(f'Found path has length     = {len(path)}')
-    log.write('*' * 40)
+        log.write(f"Found path has length     = {len(path)}")
+    log.write("*" * 40)
 
 
 def main():
-    """ Do not change this function """
+    """Do not change this function"""
     sys.setrecursionlimit(5000)
     log = Log(show_terminal=True)
     find_paths(log)

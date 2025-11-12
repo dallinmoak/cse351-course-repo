@@ -1,5 +1,5 @@
 """
-Course: CSE 351 
+Course: CSE 351
 Week: 8 Team
 File:   team.py
 Author: <Add name here>
@@ -18,7 +18,7 @@ is not being used by another philosopher. After an individual philosopher
 finishes eating, they need to put down both forks so that the forks become
 available to others. A philosopher can only take the fork on their right or
 the one on their left as they become available and they cannot start eating
-before getting both forks.  When a philosopher is finished eating, they think 
+before getting both forks.  When a philosopher is finished eating, they think
 for a little while.
 
 Eating is not limited by the remaining amounts of spaghetti or stomach space;
@@ -37,7 +37,7 @@ Instructions:
 
 Requirements you must Implement:
 
-- [NEW] This is the same problem as last team activity, but with this new requirement: You will now implement a waiter.  
+- [NEW] This is the same problem as last team activity, but with this new requirement: You will now implement a waiter.
   When a philosopher wants to eat, it will ask the waiter if it can. If the waiter indicates that a
   philosopher can eat, the philosopher will pick up each fork and eat. There must not be a issue
   picking up the two forks since the waiter is in control of the forks and when philosophers eat.
@@ -56,7 +56,7 @@ Requirements you must Implement:
 Suggestions and team Discussion:
 
 - You have Locks and Semaphores that you can use:
-    - Remember that lock.acquire() has arguments that may be useful: `blocking` and `timeout`.  
+    - Remember that lock.acquire() has arguments that may be useful: `blocking` and `timeout`.
 - Design your program to handle N philosophers and N forks after you get it working for 5.
 - When you get your program working, how to you prove that no philosopher will starve?
   (Just looking at output from print() statements is not enough!)
@@ -69,10 +69,51 @@ Suggestions and team Discussion:
 import time
 import threading
 
-PHILOSOPHERS = 5
-MAX_MEALS_EATEN = PHILOSOPHERS * 5 # NOTE: Total meals to be eaten, not per philosopher!
+from typing import Literal
 
-# TODO - Create the Waiter class.
+Hand = Literal["left", "right"]
+
+PHILOSOPHERS = 5
+MAX_MEALS_EATEN = (
+    PHILOSOPHERS * 5
+)  # NOTE: Total meals to be eaten, not per philosopher!
+
+
+class Waiter:
+    def __init__(self): ...
+
+    # TODO implement
+
+
+class Fork:
+    def __init__(self, id):
+        self.id = id
+        self.holder_id: int | None = None
+        self.hand: Hand | None = None
+
+    def setHolder(self, id: int, hand: Hand):
+        self.holder_id = id
+        self.hand = hand
+
+    def getHolder(self):
+        if self.holder_id is None:
+            return None
+        return self.holder_id, self.hand
+
+class Philosopher():
+    def __init__(self, name, id):
+        self.name = name
+        self.id = id
+        self.meals_eaten = 0
+
+    def startEating(self, forks: list[Fork]):
+        for fork in forks:
+            hand = "left" if fork.id == self.id else "right"
+            holder = fork.getHolder()
+            if holder is not None:
+                raise RuntimeError("Fork conflict: fork already held by another philosopher") 
+            fork.setHolder(self.id, hand)
+        
 
 def main():
     # TODO - Get an instance of the Waiter.
@@ -80,8 +121,21 @@ def main():
     # TODO - Create PHILOSOPHERS philosophers.
     # TODO - Start them eating and thinking.
     # TODO - Display how many times each philosopher ate.
-    pass
+    names = ["Plato", "Confucius", "Socrates", "Voltaire", "Descartes"]
+
+    waiter = Waiter()
+
+    forks = []
+    philosophers = []
+
+    for i in range(PHILOSOPHERS):
+        forks.append(Fork(i))
+        philosophers.append(Philosopher(names[i], i))
+
+    waiter.assign_forks(forks, philosophers)
 
 
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     main()

@@ -38,7 +38,7 @@ def guest_partying(id, count):
     print(f'Guest: {id}, count = {count}')
     time.sleep(random.uniform(0, 1))
 
-def cleaner():
+def cleaner(id, clean_lock, party_lock):
     """
     do the following for TIME seconds
         cleaner will wait to try to clean the room (cleaner_waiting())
@@ -47,9 +47,20 @@ def cleaner():
         Take some time cleaning (cleaner_cleaning())
         display message STOPPING_CLEANING_MESSAGE
     """
+    while True:
+        cleaner_waiting()
+        with party_lock:
+            global cleaned_count
+            cleaned_count += 1
+            print(STARTING_CLEANING_MESSAGE)
+            clean_lock.aquire()
+            cleaner_cleaning(id)
+
+            print(STOPPING_CLEANING_MESSAGE)
+            clean_lock.release()
     pass
 
-def guest():
+def guest(id, party_lock, clean_lock):
     """
     do the following for TIME seconds
         guest will wait to try to get access to the room (guest_waiting())
@@ -58,11 +69,42 @@ def guest():
         Take some time partying (call guest_partying())
         display message STOPPING_PARTY_MESSAGE if the guest is the last one leaving in the room
     """
+    while True:
+        guest_waiting()
+        with clean_lock:
+            global party_count
+            party_count += 1
+            print(STARTING_PARTY_MESSAGE)
+            party_lock.acquire()
+            guest_partying(id, party_count)
+
+            print(STOPPING_PARTY_MESSAGE)
+            party_lock.release()
     pass
 
 def main():
     # Start time of the running of the program.
     start_time = time.time()
+
+    clean_lock = mp.Lock()  # lock acquired and released by cleaners, used by guests to increment or decrement the party count
+    party_lock = mp.Lock()  # lock acquired and released by guests, used by cleaners to check if there are any guests in the room
+
+    global cleaned_count
+    cleaned_count = 0
+    global party_count
+    party_count = 0
+
+    for i in range(HOTEL_GUESTS):
+        g = mp.Process(target=guest, args=(i, party_lock, clean_lock))
+        g.start()
+        g.join()
+
+    for i in range(CLEANING_STAFF):
+        c = mp.Process(target=cleaner, args=(i, clean_lock, party_lock))
+        c.start()
+        c.join()
+    
+
 
     # TODO - add any variables, data structures, processes you need
     # TODO - add any arguments to cleaner() and guest() that you need

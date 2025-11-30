@@ -3,7 +3,7 @@
  * Week  : 11
  *
  * - You need to run the server in Python for this program first
- * 
+ *
  * Goal: (Look for to do comments)
  * 1) install package Newtonsoft.Json.Linq for this project.
  *    - very easy to do in Rider (right click on the error)
@@ -26,7 +26,7 @@ class Program
     private static readonly HttpClient HttpClient = new();
     private const string TopApiUrl = "http://127.0.0.1:8790";
     private static int callCount = 0;
-    
+
     // Makes one URL call to the server
     private static async Task<JObject?> GetDataFromServerAsync(string url)
     {
@@ -42,8 +42,8 @@ class Program
             Console.WriteLine($"Error fetching data from {url}: {e.Message}");
             return null;
         }
-    }    
-    
+    }
+
     // Retrieves all urls from a list of urls
     private static async Task GetUrlsAsync(JObject filmData, string kind)
     {
@@ -55,7 +55,7 @@ class Program
         Console.WriteLine(kind.ToUpper());
 
         Console.WriteLine($"  Number of urls = {urls.Count}");
-        
+
         // Use Select() to process all urls in the list at once
         // This works because we are using async for the lambda function
         var tasks = urls.Select(async url =>
@@ -71,12 +71,12 @@ class Program
 
         // Wait for ALL the tasks in the list to complete.
         await Task.WhenAll(tasks);
-    }    
-    
+    }
+
     static async Task Main()
     {
         var stopwatch = Stopwatch.StartNew();
-        
+
         var film6 = await GetDataFromServerAsync($"{TopApiUrl}/films/6");
         Console.WriteLine(film6["director"]);
 
@@ -85,9 +85,9 @@ class Program
         await GetUrlsAsync(film6, "starships");
         await GetUrlsAsync(film6, "vehicles");
         await GetUrlsAsync(film6, "species");
-        
+
         stopwatch.Stop();
-        
+
         // TODO - display the number of calls to the server
         Console.WriteLine($"Total calls to the server = {callCount}");
         Console.WriteLine($"Total execution time: {stopwatch.Elapsed.TotalSeconds:F2} seconds");
